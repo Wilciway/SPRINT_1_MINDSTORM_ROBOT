@@ -3,74 +3,82 @@
 #include <unistd.h>
 #include <signal.h>
 #include <iomanip>
-//rechts is kleursensor 1
-//links is lichtsensor3
-//rechts is motor b
-//links is motor c
 
-// <2100 is wit
-// >500 is wit
 using namespace std;
-BrickPi3 			BP;
-sensor_light_t		leftLightSensor;
-sensor_color_t		rightColorSensor;
-sensor_ultrasonic_t	middleUltrasonicSensor;
+BrickPi3                        BP;
+sensor_light_t          leftLightSensor;
+sensor_color_t          rightColorSensor;
+sensor_ultrasonic_t     middleUltrasonicSensor;
+int standardSpeed = 75; //standaard snelheid van de robot
+int turnSpeed =10;	//snelheid van het wiel aan de kant die hij op gaat draaien
+int stopSpeed = 0; //snelheid wanneer is moet stoppen
+
+
 
 void exit_signal_handler(int signo){
+	// stopt alle motors en sensors wanneer het programma wordt afgesloten
   if(signo == SIGINT){
-    BP.reset_all();    
-    exit(-2);
+	BP.reset_all();
+	exit(-2);
   }
 }
-
-void init(){
-	signal(SIGINT, exit_signal_handler);
-	BP.detect();
-	BP.set_sensor_type(PORT_3, SENSOR_TYPE_NXT_LIGHT_ON);
-	BP.set_sensor_type(PORT_1, SENSOR_TYPE_NXT_COLOR_FULL);
-	BP.set_sensor_type(PORT_2, SENSOR_TYPE_NXT_ULTRASONIC);
+	void init(){
+		//zet alle sensors aan.
+		signal(SIGINT, exit_signal_handler);
+		BP.detect();
+		BP.set_sensor_type(PORT_3, SENSOR_TYPE_NXT_LIGHT_ON);
+		BP.set_sensor_type(PORT_1, SENSOR_TYPE_NXT_COLOR_FULL);
+		BP.set_sensor_type(PORT_2, SENSOR_TYPE_NXT_ULTRASONIC);
  }
- 
- 
+
+
 int main(){
-	init();
-
-	int standardSpeed=100;
-	int turnSpeed=20;
-	int stopSpeed=0;
-
-	while(true){
-		BP.get_sensor(PORT_1, rightColorSensor);
-		BP.get_sensor(PORT_2, middleUltrasonicSensor);
-		BP.get_sensor(PORT_3, leftLightSensor);
-		cout<<"rgb sensor"<<
-		if(middleUltrasonicSensor.cm > 15){
-			if(rightColorSensor.reflected_red>500){
-				if(leftLightSensor.reflected<2200){
-					cout<<"links"<<endl;
-					BP.set_motor_power(PORT_B,standardSpeed);
-					BP.set_motor_power(PORT_C,turnSpeed);
-				}
-				else{
-					cout<<"rechtdoor"<<endl;
-					BP.set_motor_power(PORT_C,standardSpeed);
-					BP.set_motor_power(PORT_B,standardSpeed);
-				}
+		//zet alle sensors aan.
+		init();
+		string last_seen="links";
+		
+			while(true){
+				//haal informatie op van alle sensors.
+				BP.get_sensor(PORT_1, rightColorSensor);
+				BP.get_sensor(PORT_2, middleUltrasonicSensor);
+				BP.get_sensor(PORT_3, leftLightSensor);
+				
+				if(middleUltrasonicSensor.cm > 10){ //Als er geen obstakel is binnen de komende 10cm doe het volgende.
+					if(rightColorSensor.reflected_red > 500){ //Als de rechter kleur sensor wit ziet doe het volgende.
+						if(leftLightSensor.reflected>2000){ //Als de linker licht sensor zwart ziet ga rechtdoor.
+							last_seen = "links"; //Geeft aan dat de robot voor het laatst aan de linkerkant van de lijn is geweest.
+							cout<<"rechtdoor"<<endl;
+							BP.set_motor_power(PORT_C,standardSpeed);
+							BP.set_motor_power(PORT_B,standardSpeed);
+							}
+					else{	//Als de linker licht sensor GEEN zwart ziet oftewel wit doe het volgende.
+							if(last_seen == "links"){ //Als de robot voor het laatst aan de linkerkant van de lijn is geweest ga linksaf.
+								cout<<"links"<<endl;
+								BP.set_motor_power(PORT_B,100);
+								BP.set_motor_power(PORT_C,0);
+							}
+							else{	//Als de robot voor het laatst NIET aan de linkerkant van de lijn is geweest oftewel aan de rechterkant ga rechtsaf.
+								cout<<"rechts"<<endl;
+								BP.set_motor_power(PORT_C,100);
+								BP.set_motor_power(PORT_B,turnSpeed);
+							}
+						}
+					}
+					else{	//Als de rechter kleur sensor GEEN wit ziet oftewel zwart doe het volgende.
+						if(leftLightSensor.reflected<2000){ //Als de linker licht sensor wit ziet ziet ga rechtdoor.
+							last_seen = "rechts"; //Geeft aan dat de robot voor het laatst aan de rechterkant van de lijn is geweest.
+									
+							}
+							
+					}
 			}
-			else if(rightColorSensor.reflected_red<500){
-				if(leftLightSensor<2200){
-					cout<<"rechts"<<endl;
-					BP.set_motor_power(PORT_C,standardSpeed);
-					BP.set_motor_power(PORT_B,turnSpeed);
-				}
+			else{	//Als er een obstakel is stop de robot
+					cout<<"obstakel"<<endl;
+					BP.set_motor_power(PORT_B,stopSpeed);
+					BP.set_motor_power(PORT_C,stopSpeed);
 			}
 		}
-		else{
-			cout<<"obstakel"<<endl;
-			BP.set_motor_power(PORT_B,stopSpeed);
-			BP.set_motor_power(PORT_C,stopSpeed);
-		}
-	}
 }
+
 
 
