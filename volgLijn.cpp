@@ -31,6 +31,25 @@ void exit_signal_handler(int signo){
 		BP.set_sensor_type(PORT_2, SENSOR_TYPE_NXT_ULTRASONIC);
  }
 
+void rechtdoor(){
+        cout<<"rechtdoor"<<endl;
+        BP.set_motor_power(PORT_C,standardSpeed);
+        BP.set_motor_power(PORT_B,standardSpeed);
+}
+
+
+
+void links(){
+        cout<<"links"<<endl;
+        BP.set_motor_power(PORT_B,100);
+        BP.set_motor_power(PORT_C,stopSpeed);
+}
+
+void rechts(){
+        cout<<"rechts"<<endl;
+        BP.set_motor_power(PORT_C,100);
+        BP.set_motor_power(PORT_B,turnSpeed);
+}
 
 int main(){
 		//zet alle sensors aan.
@@ -47,20 +66,15 @@ int main(){
 					if(rightColorSensor.reflected_red > 500){ //Als de rechter kleur sensor wit ziet doe het volgende.
 						if(leftLightSensor.reflected>2000){ //Als de linker licht sensor zwart ziet ga rechtdoor.
 							last_seen = "links"; //Geeft aan dat de robot voor het laatst aan de linkerkant van de lijn is geweest.
-							cout<<"rechtdoor"<<endl;
-							BP.set_motor_power(PORT_C,standardSpeed);
-							BP.set_motor_power(PORT_B,standardSpeed);
+							last_seen = "links";
+                                        rechtdoor();
 							}
 					else{	//Als de linker licht sensor GEEN zwart ziet oftewel wit doe het volgende.
 							if(last_seen == "links"){ //Als de robot voor het laatst aan de linkerkant van de lijn is geweest ga linksaf.
-								cout<<"links"<<endl;
-								BP.set_motor_power(PORT_B,100);
-								BP.set_motor_power(PORT_C,0);
+								links();
 							}
 							else{	//Als de robot voor het laatst NIET aan de linkerkant van de lijn is geweest oftewel aan de rechterkant ga rechtsaf.
-								cout<<"rechts"<<endl;
-								BP.set_motor_power(PORT_C,100);
-								BP.set_motor_power(PORT_B,turnSpeed);
+								rechts();
 							}
 						}
 					}
